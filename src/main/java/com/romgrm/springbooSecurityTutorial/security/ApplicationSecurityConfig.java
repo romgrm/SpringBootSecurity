@@ -14,6 +14,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     /*CRTL + O pour voir les méthodes à override*/
 
+
+    /* BASIC AUTH*/
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
