@@ -51,9 +51,15 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
         UserDetails romainGreaumeUser = User.builder()
                 .username("romaingreaume")
                 .password(passwordEncoder.encode("password")) /*Utilisation de l'objet passwordEncoder (qui contient BCrypt) pour crypter notre password*/
-                .roles("STUDENT")
+                .roles(ApplicationUserRole.STUDENT.name())
                 .build();
 
-        return new InMemoryUserDetailsManager(romainGreaumeUser);
+        UserDetails paulSmithUser = User.builder()
+                .username("paulsmith")
+                .password(passwordEncoder.encode("password123"))
+                .roles(ApplicationUserRole.ADMIN.name())
+                .build();
+
+        return new InMemoryUserDetailsManager(romainGreaumeUser, paulSmithUser);
     }
 }
