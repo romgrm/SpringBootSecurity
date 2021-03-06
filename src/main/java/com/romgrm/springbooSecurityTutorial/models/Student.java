@@ -18,4 +18,12 @@ public class Student {
         return studentName;
     }
 
+    // For console.log really data and not their memory's emplacements
+    @Override
+    public String toString() {
+        return "Student{" +
+                "studentId=" + studentId +
+                ", studentName='" + studentName + '\'' +
+                '}';
+    }
 }
