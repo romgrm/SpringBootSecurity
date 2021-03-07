@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -18,6 +19,7 @@ import static com.romgrm.springbooSecurityTutorial.security.ApplicationUserRole.
 
 @Configuration
 @EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     /*Ici se trouvera tout ce qui concerne la config de sécurité de notre application
     Notre class extends d'une classe mère gérant la securité de Springboot. On va pouvoir override
@@ -42,10 +44,10 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
-                .antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
-                .antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
-                .antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
-                .antMatchers(HttpMethod.GET,"/management/api/**").hasAnyRole(ADMIN.name(), ADMINTRAINEE.name()) // Les utilisateurs ayant le rôle ADMIN ou ADMINTRAINEE auront accès à cette method/request
+                //.antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
+                //.antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
+                //.antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
+                //.antMatchers(HttpMethod.GET,"/management/api/**").hasAnyRole(ADMIN.name(), ADMINTRAINEE.name()) // Les utilisateurs ayant le rôle ADMIN ou ADMINTRAINEE auront accès à cette method/request
                 .anyRequest()
                 .authenticated()
                 .and()
