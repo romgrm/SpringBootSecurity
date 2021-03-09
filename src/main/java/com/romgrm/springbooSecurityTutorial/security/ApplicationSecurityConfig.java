@@ -37,13 +37,13 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
 
 
-    /* BASIC AUTH*/
+    /* FORMBASED AUTH*/
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
-                .csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()) // Permet de gérer l'envoie du Token pour proétger nos réception de request (POST/PUT..)
-                .and()
+                /*.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()) // Permet de gérer l'envoie du Token pour proétger nos réception de request (POST/PUT..)
+                .and()*/
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
@@ -54,7 +54,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest()
                 .authenticated()
                 .and()
-                .httpBasic();
+                .formLogin()
+                .loginPage("/login").permitAll();
     }
 
 
