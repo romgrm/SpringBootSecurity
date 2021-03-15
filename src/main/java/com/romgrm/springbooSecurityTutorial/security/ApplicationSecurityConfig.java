@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.romgrm.springbooSecurityTutorial.security.ApplicationUserPermission.*;
 import static com.romgrm.springbooSecurityTutorial.security.ApplicationUserRole.*;
 
@@ -55,7 +57,12 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticated()
                 .and()
                 .formLogin()
-                .loginPage("/login").permitAll();
+                .loginPage("/login").permitAll()
+                .defaultSuccessUrl("/courses", true)
+                .and()
+                .rememberMe() // par défaut pour 2 semaines
+                    .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(25))
+                    .key("somethingVerySecured");
     }
 
 
