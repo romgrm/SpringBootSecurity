@@ -3,21 +3,18 @@ package com.romgrm.springbooSecurityTutorial.security;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configurers.userdetails.DaoAuthenticationConfigurer;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 import java.util.concurrent.TimeUnit;
 
-import static com.romgrm.springbooSecurityTutorial.security.ApplicationUserPermission.*;
 import static com.romgrm.springbooSecurityTutorial.security.ApplicationUserRole.*;
 
 @Configuration
@@ -30,11 +27,14 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     /*CRTL + O pour voir les méthodes à override*/
 
-    /*NEW INSTANCE OF BCRYPTENCODER*/
+    /*NEW INSTANCE OF BCRYPTENCODER AND USERDETAILSSERVICE*/
     private final PasswordEncoder passwordEncoder;
+    private final UserDetailsService userDetailsService;
+
     @Autowired
-    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder) {
+    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
         this.passwordEncoder = passwordEncoder;
+        this.userDetailsService = userDetailsService;
     }
 
 
@@ -72,32 +72,18 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                     .logoutSuccessUrl("/login"); // on redirige vers l'url login après le logout success
     }
 
-
-    /*CREATE USERS*/
+    /*Utilisation du PROVIDER*/
     @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.authenticationProvider(daoAuthenticationProvider());
+    }
+
+    /*Inject les users récupérés dans notre BDD (package auth), PROVIDER*/
     @Bean
-    protected UserDetailsService userDetailsService() {
-        UserDetails romainGreaumeUser = User.builder()
-                .username("romaingreaume")
-                .password(passwordEncoder.encode("password")) /*Utilisation de l'objet passwordEncoder (qui contient BCrypt) pour crypter notre password*/
-//                .roles(STUDENT.name())
-                .authorities(STUDENT.getGrantedAuthorities()) // appel de la method pour renvoyer une liste de permissions et faire correspondre aux antMatchers() en httpMethod
-                .build();
-
-        UserDetails paulSmithUser = User.builder()
-                .username("paulsmith")
-                .password(passwordEncoder.encode("password123"))
-//                .roles(ADMIN.name())
-                .authorities(ADMIN.getGrantedAuthorities()) // appel de la method pour renvoyer une liste de permissions et faire correspondre aux antMatchers() en httpMethod
-                .build();
-
-        UserDetails tomFraggerUser = User.builder()
-                .username("tomfragger")
-                .password(passwordEncoder.encode("password456"))
-//                .roles(ADMINTRAINEE.name())
-                .authorities(ADMINTRAINEE.getGrantedAuthorities()) // appel de la method pour renvoyer une liste de permissions et faire correspondre aux antMatchers() en httpMethod
-                .build();
-
-        return new InMemoryUserDetailsManager(romainGreaumeUser, paulSmithUser, tomFraggerUser);
+    public DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(); // créer un provider pour "apporter" les users à Spring
+        provider.setPasswordEncoder(passwordEncoder); // utilise l'encoder Bcrypt pour les mp
+        provider.setUserDetailsService(userDetailsService); // utilise notre userDetailsService créé dans auth
+        return provider;
     }
 }
