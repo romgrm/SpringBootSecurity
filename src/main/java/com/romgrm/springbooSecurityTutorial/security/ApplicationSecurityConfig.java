@@ -1,8 +1,12 @@
 package com.romgrm.springbooSecurityTutorial.security;
 
+import com.romgrm.springbooSecurityTutorial.auth.ApplicationUserService;
+import com.romgrm.springbooSecurityTutorial.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.authentication.configurers.userdetails.DaoAuthenticationConfigurer;
@@ -10,6 +14,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -27,49 +32,31 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
 
     /*CRTL + O pour voir les méthodes à override*/
 
-    /*NEW INSTANCE OF BCRYPTENCODER AND USERDETAILSSERVICE*/
+    /*NEW INSTANCE OF BCRYPTENCODER AND APPLICATIONUSERSERVICE*/
     private final PasswordEncoder passwordEncoder;
-    private final UserDetailsService userDetailsService;
+    private final ApplicationUserService applicationUserService;
 
     @Autowired
-    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
+    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, @Qualifier("userDetailsServ") ApplicationUserService applicationUserService) {
         this.passwordEncoder = passwordEncoder;
-        this.userDetailsService = userDetailsService;
+        this.applicationUserService = applicationUserService;
     }
 
 
 
-    /* FORMBASED AUTH*/
+    /* JWT AUTH*/
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .csrf().disable()
-                /*.csrf().csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()) // Permet de gérer l'envoie du Token pour proétger nos réception de request (POST/PUT..)
-                .and()*/
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // permet de dire à Spring que la session est Stateless et qu'elle ne sera pas gardée en mémoire
+                .and()
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager())) // ajout du filter JWT authentication par username/password
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
-                //.antMatchers(HttpMethod.DELETE, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
-                //.antMatchers(HttpMethod.POST, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
-                //.antMatchers(HttpMethod.PUT, "/management/api/**").hasAuthority(COURSE_WRITE.getPermission()) // Seul l'utilisateur qui a la permission COURSE_WRITE pourra avoir accès à cette method/request
-                //.antMatchers(HttpMethod.GET,"/management/api/**").hasAnyRole(ADMIN.name(), ADMINTRAINEE.name()) // Les utilisateurs ayant le rôle ADMIN ou ADMINTRAINEE auront accès à cette method/request
                 .anyRequest()
-                .authenticated()
-                .and()
-                .formLogin()
-                .loginPage("/login").permitAll()
-                .defaultSuccessUrl("/courses", true)
-                .and()
-                .rememberMe() // par défaut pour 2 semaines
-                    .tokenValiditySeconds((int) TimeUnit.DAYS.toSeconds(25))
-                    .key("somethingVerySecured")
-                .and()
-                .logout()
-                    .logoutUrl("/logout") // l'url du logout
-                    .clearAuthentication(true) // on nettoie l'authentification du user
-                    .invalidateHttpSession(true) // on nettoie la session user
-                    .deleteCookies("JSESSIONID", "remember-me") // on delete les cookies en renseignant leurs noms
-                    .logoutSuccessUrl("/login"); // on redirige vers l'url login après le logout success
+                .authenticated();
     }
 
     /*Utilisation du PROVIDER*/
@@ -83,7 +70,7 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     public DaoAuthenticationProvider daoAuthenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(); // créer un provider pour "apporter" les users à Spring
         provider.setPasswordEncoder(passwordEncoder); // utilise l'encoder Bcrypt pour les mp
-        provider.setUserDetailsService(userDetailsService); // utilise notre userDetailsService créé dans auth
+        provider.setUserDetailsService(applicationUserService); // utilise notre userDetailsService créé dans auth
         return provider;
     }
 }
