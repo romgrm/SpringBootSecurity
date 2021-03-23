@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import javax.crypto.SecretKey;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -21,9 +22,17 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
 
     /*AuthenticationManager pour authentifier ou pas un utilisateur*/
     private final AuthenticationManager authenticationManager;
+    /*Instance de notre JwtConfig pour utiliser le HttpHeader*/
+    private final JwtConfig jwtConfig;
+    /*Instance de notre SecretKey provenant de la class JwtSecretKey pour avoir accès à la clef cryptée*/
+    private final SecretKey secretKey;
 
-    public JwtUsernameAndPasswordAuthenticationFilter(AuthenticationManager authenticationManager) {
+    public JwtUsernameAndPasswordAuthenticationFilter(AuthenticationManager authenticationManager,
+                                                      JwtConfig jwtConfig,
+                                                      SecretKey secretKey) {
         this.authenticationManager = authenticationManager;
+        this.jwtConfig = jwtConfig;
+        this.secretKey = secretKey;
     }
 
     /*Method pour récupérer les données en entrée clavier de l'utilisateur et vérifier si l'authentification est correcte ou pas*/
@@ -66,11 +75,11 @@ public class JwtUsernameAndPasswordAuthenticationFilter extends UsernamePassword
                 .setSubject(authResult.getName()) // on définie le "sujet" de notre token qui sera notre utilisateur en récupérant son nom stocké dans notre Authentication créé au dessus
                 .claim("authorities", authResult.getAuthorities()) // ici on définit le body/claim de notre token en renseignant les authorités de notre user
                 .setIssuedAt(new Date()) // l'heure à laquelle le token est émit
-                .setExpiration(java.sql.Date.valueOf(LocalDate.now().plusWeeks(2))) // Quand le token va expirer -> attention de bien choisir Date de la lib sql au début
-                .signWith(Keys.hmacShaKeyFor(key.getBytes())) // L'encodage de la signature du token (dernière partie sur les 3) en appelant la key créé au dessus
+                .setExpiration(java.sql.Date.valueOf(LocalDate.now().plusDays(jwtConfig.getTokenExpirationAfterDays()))) // Quand le token va expirer -> attention de bien choisir Date de la lib sql au début
+                .signWith(secretKey) // L'encodage de la signature du token (dernière partie sur les 3) en appelant la key créé au dessus
                 .compact();
 
         // Renvoie du token dans le header de la response envoyée a l'utilisateur
-        response.addHeader("Authorization", "Bearer : " + token);
+        response.addHeader(jwtConfig.getAuthorizationHeader(), jwtConfig.getTokenPrefix() + token);
     }
 }

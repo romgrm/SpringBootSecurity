@@ -1,24 +1,23 @@
 package com.romgrm.springbooSecurityTutorial.security;
 
 import com.romgrm.springbooSecurityTutorial.auth.ApplicationUserService;
+import com.romgrm.springbooSecurityTutorial.jwt.JwtConfig;
+import com.romgrm.springbooSecurityTutorial.jwt.JwtTokenFilter;
 import com.romgrm.springbooSecurityTutorial.jwt.JwtUsernameAndPasswordAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configurers.userdetails.DaoAuthenticationConfigurer;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.concurrent.TimeUnit;
+import javax.crypto.SecretKey;
 
 import static com.romgrm.springbooSecurityTutorial.security.ApplicationUserRole.*;
 
@@ -36,10 +35,16 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
     private final PasswordEncoder passwordEncoder;
     private final ApplicationUserService applicationUserService;
 
+    /*Ajout des instances pour que nos filters fonctionnent*/
+    private final JwtConfig jwtConfig;
+    private final SecretKey secretKey;
+
     @Autowired
-    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, @Qualifier("userDetailsServ") ApplicationUserService applicationUserService) {
+    public ApplicationSecurityConfig(PasswordEncoder passwordEncoder, @Qualifier("userDetailsServ") ApplicationUserService applicationUserService, JwtConfig jwtConfig, SecretKey secretKey) {
         this.passwordEncoder = passwordEncoder;
         this.applicationUserService = applicationUserService;
+        this.jwtConfig = jwtConfig;
+        this.secretKey = secretKey;
     }
 
 
@@ -51,7 +56,8 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // permet de dire à Spring que la session est Stateless et qu'elle ne sera pas gardée en mémoire
                 .and()
-                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager())) // ajout du filter JWT authentication par username/password
+                .addFilter(new JwtUsernameAndPasswordAuthenticationFilter(authenticationManager(), jwtConfig, secretKey)) // ajout du filter JWT authentication par username/password
+                .addFilterAfter(new JwtTokenFilter(secretKey, jwtConfig), JwtUsernameAndPasswordAuthenticationFilter.class) // ajout du filter de token après le filter d'auth par username/password
                 .authorizeRequests()
                 .antMatchers("/", "index", "/css/*", "/js/*").permitAll()
                 .antMatchers("/api/**").hasRole(STUDENT.name())
